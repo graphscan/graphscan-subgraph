@@ -1218,7 +1218,6 @@ export function createOrLoadIndexerDeployment(
 }
 
 export function updateDelegatorsRewardsFields(indexerId: string, event: ethereum.Event): void {
-  let graphNetwork = GraphNetwork.load('1')!
   let indexer = Indexer.load(indexerId)!
   let delegationStakes = indexer.delegators.load()
   for (let i = 0; i < delegationStakes.length; i++) {
