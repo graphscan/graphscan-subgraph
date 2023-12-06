@@ -11,8 +11,8 @@ import {
   createOrLoadEpoch,
   updateAdvancedIndexerMetrics,
   updateDelegationExchangeRate,
-  updateDelegatorsRewardsFields,
-  createOrLoadGraphNetwork
+  createOrLoadGraphNetwork,
+  queueIndexerForRecalculate
 } from './helpers/helpers'
 import { addresses } from '../../config/addresses'
 
@@ -87,7 +87,7 @@ export function handleRewardsAssigned(event: RewardsAssigned): void {
     delegatorIndexingRewards,
   )
   graphNetwork.save()
-  updateDelegatorsRewardsFields(indexerID, event)
+  queueIndexerForRecalculate(indexerID)
 }
 
 /**

@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, Bytes } from '@graphprotocol/graph-ts'
+import { BigInt, BigDecimal, store, ethereum } from '@graphprotocol/graph-ts'
 import {
   StakeDeposited,
   StakeWithdrawn,
@@ -28,6 +28,7 @@ import {
   GraphAccount,
   Delegator,
   DelegatedStake,
+  IndexersRecalculateQueue,
 } from '../types/schema'
 
 import {
@@ -45,9 +46,10 @@ import {
   batchUpdateSubgraphSignalledTokens,
   createOrLoadGraphNetwork,
   createOrLoadIndexerDeployment,
-  updateDelegatorsRewardsFields,
   updateRewardProportionOnDeployment,
   calculateCapacities,
+  updateDelegatorsRewardsFields,
+  queueIndexerForRecalculate,
 } from './helpers/helpers'
 import { addresses } from '../../config/addresses'
 
@@ -240,7 +242,7 @@ export function handleStakeDelegated(event: StakeDelegated): void {
 
   graphNetwork.save()
   delegator.save()
-  updateDelegatorsRewardsFields(indexer.id, event)
+  queueIndexerForRecalculate(indexer.id)
 }
 
 export function handleStakeDelegatedLocked(event: StakeDelegatedLocked): void {
@@ -300,7 +302,7 @@ export function handleStakeDelegatedLocked(event: StakeDelegatedLocked): void {
 
   graphNetwork.save()
   delegator.save()
-  updateDelegatorsRewardsFields(indexerID, event)
+  queueIndexerForRecalculate(indexerID)
 }
 
 export function handleStakeDelegatedWithdrawn(event: StakeDelegatedWithdrawn): void {
@@ -551,7 +553,6 @@ export function handleAllocationClosed(event: AllocationClosed): void {
   graphNetwork.save()
 }
 
-
 /**
  * @dev handleAllocationClosed
  * Note: this handler is for the AllocationClosed event prior to exponential rebates upgrade
@@ -708,7 +709,7 @@ export function handleRebateClaimed(event: RebateClaimed): void {
     event.params.delegationFees.plus(event.params.tokens),
   )
   graphNetwork.save()
-  updateDelegatorsRewardsFields(indexerID, event)
+  queueIndexerForRecalculate(indexerID)
 }
 
 /**
@@ -793,7 +794,6 @@ export function handleRebateCollected(event: RebateCollected): void {
   )
   graphNetwork.save()
 }
-
 
 /**
  * @dev handleParameterUpdated
@@ -927,3 +927,17 @@ export function handleAssetHolderUpdate(event: AssetHolderUpdate): void {
 //   graphNetwork.stakingImplementations = implementations
 //   graphNetwork.save()
 // }
+
+// GRAPHSCAN PATCH
+export function handleBlock(block: ethereum.Block): void {
+  let queueEntityDeployment: IndexersRecalculateQueue | null
+  let i = 0
+  let queueId = i.toString()
+  while ((queueEntityDeployment = IndexersRecalculateQueue.load(queueId)) != null) {
+    updateDelegatorsRewardsFields(queueEntityDeployment.indexer)
+    store.remove('IndexersRecalculateQueue', queueId)
+    i++
+    queueId = i.toString()
+  }
+}
+// END GRAPHSCAN PATCH

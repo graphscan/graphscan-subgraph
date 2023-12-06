@@ -1,4 +1,4 @@
-specVersion: 0.0.5
+specVersion: 0.0.8
 description: The Graph Network Smart Contracts on Ethereum for Graphscan.io
 repository: https://github.com/graphscan/graphscan-subgraph
 features:
@@ -244,6 +244,7 @@ dataSources:
         - Delegator
         - DelegatedStake
         - Epoch
+        - IndexersRecalculateQueue
       abis:
         - name: L1Staking
           file: ./node_modules/@graphprotocol/contracts/dist/abis/L1Staking.json
@@ -313,6 +314,7 @@ dataSources:
         - Delegator
         - DelegatedStake
         - Epoch
+        - IndexersRecalculateQueue
       abis:
         - name: Staking
           file: ./abis/IStakingStitched.json
@@ -357,6 +359,16 @@ dataSources:
           handler: handleAssetHolderUpdate
         # - event: ImplementationUpdated(address,address)
         #   handler: handleImplementationUpdated
+      blockHandlers:
+        - handler: handleBlock
+          filter:
+            kind: polling
+{{#isL1}}
+            every: 5 # 1 minute
+{{/isL1}}
+{{^isL1}}
+            every: 240 # 1 minute
+{{/isL1}}
   - kind: ethereum/contract
     name: StakingExtension
     network: {{network}}
@@ -503,6 +515,7 @@ dataSources:
         - GraphNetwork
         - Epoch
         - SubgraphDeployment
+        - IndexersRecalculateQueue
       abis:
         - name: RewardsManagerStitched
           file: ./abis/RewardsManagerStitched.json
