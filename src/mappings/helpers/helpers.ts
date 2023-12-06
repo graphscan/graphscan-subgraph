@@ -31,6 +31,7 @@ import {
   IndexerDeployment,
   RewardCutHistoryEntity,
   DelegationPoolHistoryEntity,
+  IndexersRecalculateQueue,
 } from '../../types/schema'
 import { ENS } from '../../types/GNS/ENS'
 import { Controller } from '../../types/Controller/Controller'
@@ -1217,13 +1218,12 @@ export function createOrLoadIndexerDeployment(
   return indexerDeployment as IndexerDeployment
 }
 
-export function updateDelegatorsRewardsFields(indexerId: string, event: ethereum.Event): void {
+export function updateDelegatorsRewardsFields(indexerId: string): void {
   let indexer = Indexer.load(indexerId)!
   let delegationStakes = indexer.delegators.load()
   for (let i = 0; i < delegationStakes.length; i++) {
     let delegatedStake = delegationStakes[i]
     let delegator = Delegator.load(delegatedStake.delegator)!
-    let id = indexer.id + delegatedStake.delegator + event.block.number.toString()
     // deducts the old value of the current stake
     delegator.currentStaked = delegator.currentStaked.minus(delegatedStake.currentDelegationAmount)
     // deducts the old value of the unreleased rewards
@@ -1309,4 +1309,20 @@ export function updateRewardProportionOnDeployment(deployment: SubgraphDeploymen
       .toBigDecimal()
       .div(deployment.stakedTokens.toBigDecimal())
   }
+}
+
+export function queueIndexerForRecalculate(indexer: string): void {
+  let i = 0
+  let queueId = i.toString()
+  let queueEntityDeployment: IndexersRecalculateQueue | null
+  while ((queueEntityDeployment = IndexersRecalculateQueue.load(queueId)) != null) {
+    if (queueEntityDeployment.indexer == indexer) {
+      return
+    }
+    i++
+    queueId = i.toString()
+  }
+  let queueEntity = new IndexersRecalculateQueue(queueId)
+  queueEntity.indexer = indexer
+  queueEntity.save()
 }
