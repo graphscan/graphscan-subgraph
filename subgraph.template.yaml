@@ -372,10 +372,10 @@ dataSources:
           filter:
             kind: polling
 {{#isL1}}
-            every: 5 # 1 minute
+            every: 10 # 2 minutes
 {{/isL1}}
 {{^isL1}}
-            every: 240 # 1 minute
+            every: 500 # around 2 minute
 {{/isL1}}
   - kind: ethereum/contract
     name: StakingExtension
