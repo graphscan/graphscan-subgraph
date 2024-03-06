@@ -23,9 +23,6 @@ import {
   NameSignal,
   Delegator,
   DelegatedStake,
-  Network,
-  // SubgraphCategory,
-  // SubgraphCategoryRelation,
   NameSignalSubgraphRelation,
   CurrentSubgraphDeploymentRelation,
   IndexerDeployment,
@@ -33,11 +30,14 @@ import {
   DelegationPoolHistoryEntity,
   IndexersRecalculateQueue,
 } from '../../types/schema'
+import {
+  SubgraphDeploymentManifest as SubgraphDeploymentManifestTemplate
+} from '../../types/templates'
 import { ENS } from '../../types/GNS/ENS'
 import { Controller } from '../../types/Controller/Controller'
 import { EpochManager } from '../../types/EpochManager/EpochManager'
-import { fetchSubgraphDeploymentManifest } from './metadata'
 import { addresses } from '../../../config/addresses'
+
 
 export function createOrLoadSubgraph(
   bigIntID: BigInt,
@@ -97,10 +97,7 @@ export function createOrLoadSubgraphDeployment(
     let prefix = '1220'
     deployment = new SubgraphDeployment(subgraphID)
     deployment.ipfsHash = Bytes.fromHexString(prefix.concat(subgraphID.slice(2))).toBase58()
-    deployment = fetchSubgraphDeploymentManifest(
-      deployment as SubgraphDeployment,
-      deployment.ipfsHash,
-    )
+    deployment.manifest = deployment.ipfsHash
     deployment.createdAt = timestamp.toI32()
     deployment.stakedTokens = BigInt.fromI32(0)
     deployment.indexingRewardAmount = BigInt.fromI32(0)
@@ -133,6 +130,8 @@ export function createOrLoadSubgraphDeployment(
     // END GRAPHSCAN PATCH
 
     deployment.save()
+
+    SubgraphDeploymentManifestTemplate.create(deployment.ipfsHash)
 
     graphNetwork.subgraphDeploymentCount = graphNetwork.subgraphDeploymentCount + 1
     graphNetwork.save()
@@ -646,6 +645,8 @@ export function createOrLoadGraphNetwork(
     graphNetwork.subgraphCount = 0
     graphNetwork.subgraphDeploymentCount = 0
     graphNetwork.activeSubgraphCount = 0
+    graphNetwork.allocationCount = 0
+    graphNetwork.activeAllocationCount = 0
 
     graphNetwork.arbitrator = Address.fromString('0x0000000000000000000000000000000000000000')
     graphNetwork.querySlashingPercentage = 0
@@ -938,15 +939,15 @@ export function calculatePricePerShare(deployment: SubgraphDeployment): BigDecim
   return pricePerShare
 }
 
-export function createOrLoadNetwork(id: string): Network {
-  let network = Network.load(id)
-  if (network == null) {
-    network = new Network(id)
+// export function createOrLoadNetwork(id: string): Network {
+//   let network = Network.load(id)
+//   if (network == null) {
+//     network = new Network(id)
 
-    network.save()
-  }
-  return network as Network
-}
+//     network.save()
+//   }
+//   return network as Network
+// }
 
 // export function createOrLoadSubgraphCategory(id: string): SubgraphCategory {
 //   let category = SubgraphCategory.load(id)
@@ -1033,7 +1034,7 @@ export function convertBigIntSubgraphIDToBase58(bigIntRepresentation: BigInt): S
   // Although for the events where the uint256 is provided, we probably don't need to unpad.
   let hexString = bigIntRepresentation.toHexString()
   if (hexString.length % 2 != 0) {
-    log.error('Hex string not even, hex: {}, original: {}. Padding it to even length', [
+    log.warning('Hex string not even, hex: {}, original: {}. Padding it to even length', [
       hexString,
       bigIntRepresentation.toString(),
     ])
@@ -1051,129 +1052,6 @@ export function getSubgraphID(graphAccount: Address, subgraphNumber: BigInt): Bi
   let hashedId = Bytes.fromByteArray(crypto.keccak256(ByteArray.fromHexString(unhashedSubgraphID)))
   let bigIntRepresentation = BigInt.fromUnsignedBytes(changetype<Bytes>(hashedId.reverse()))
   return bigIntRepresentation
-}
-
-export function duplicateOrUpdateSubgraphWithNewID(
-  entity: Subgraph,
-  newID: String,
-  newEntityVersion: i32,
-): Subgraph {
-  let subgraph = Subgraph.load(newID)
-  if (subgraph == null) {
-    subgraph = new Subgraph(newID)
-  }
-
-  subgraph.owner = entity.owner
-  //subgraph.currentVersion = entity.currentVersion // currentVersion will have to be updated to be the duplicated SubgraphVersion entity afterwards
-  subgraph.versionCount = entity.versionCount
-  subgraph.createdAt = entity.createdAt
-  subgraph.updatedAt = entity.updatedAt
-  subgraph.active = entity.active
-  subgraph.migrated = entity.migrated
-  subgraph.nftID = entity.nftID
-  subgraph.oldID = entity.oldID
-  subgraph.creatorAddress = entity.creatorAddress
-  subgraph.subgraphNumber = entity.subgraphNumber
-  subgraph.initializing = entity.initializing
-  subgraph.signalledTokens = entity.signalledTokens
-  subgraph.unsignalledTokens = entity.unsignalledTokens
-  subgraph.currentSignalledTokens = entity.currentSignalledTokens
-  subgraph.nameSignalAmount = entity.nameSignalAmount
-  subgraph.signalAmount = entity.signalAmount
-  subgraph.reserveRatio = entity.reserveRatio
-  subgraph.withdrawableTokens = entity.withdrawableTokens
-  subgraph.withdrawnTokens = entity.withdrawnTokens
-  subgraph.nameSignalCount = entity.nameSignalCount
-  subgraph.metadataHash = entity.metadataHash
-  subgraph.ipfsMetadataHash = entity.ipfsMetadataHash
-  // subgraph.description = entity.description
-  // subgraph.image = entity.image
-  // subgraph.codeRepository = entity.codeRepository
-  // subgraph.website = entity.website
-  // subgraph.displayName = entity.displayName
-  subgraph.currentNameSignalCount = entity.currentNameSignalCount
-  // GRAPHSCAN PATCH
-  subgraph.currentNameSignalCount = entity.currentNameSignalCount
-  // END GRAPHSCAN PATCH
-
-  subgraph.startedTransferToL2 = entity.startedTransferToL2
-  subgraph.transferredToL2 = entity.transferredToL2
-  subgraph.signalledTokensSentToL2 = entity.signalledTokensSentToL2
-  subgraph.signalledTokensReceivedOnL2 = entity.signalledTokensReceivedOnL2
-  // subgraph.pastVersions = entity.pastVersions This is a derived field, we won't copy, but need to make sure NameSignals are duplicated too.
-  // subgraph.versions = entity.versions This is a derived field, we won't copy, but need to make sure NameSignals are duplicated too.
-  // subgraph.nameSignals = entity.nameSignals This is a derived field, we won't copy, but need to make sure NameSignals are duplicated too.
-  // subgraph.categories = entity.categories This is a derived field, we wont' copy, but need to make sure Categories auxiliary entities are properly duplicated too.
-
-  subgraph.entityVersion = newEntityVersion
-  subgraph.linkedEntity = entity.id // this is the entity id, since for the entity, this value will be this particular entity.
-
-  return subgraph as Subgraph
-}
-
-export function duplicateOrUpdateSubgraphVersionWithNewID(
-  entity: SubgraphVersion,
-  newID: String,
-  newEntityVersion: i32,
-): SubgraphVersion {
-  let version = SubgraphVersion.load(newID)
-  if (version == null) {
-    version = new SubgraphVersion(newID)
-  }
-
-  version.subgraphDeployment = entity.subgraphDeployment
-  version.version = entity.version
-  version.createdAt = entity.createdAt
-  version.metadataHash = entity.metadataHash
-  version.metadata = entity.metadata
-  //version.subgraph = entity.subgraph
-
-  version.entityVersion = newEntityVersion
-  version.linkedEntity = entity.id
-
-  return version as SubgraphVersion
-}
-
-export function duplicateOrUpdateNameSignalWithNewID(
-  entity: NameSignal,
-  newID: String,
-  newEntityVersion: i32,
-): NameSignal {
-  let signal = NameSignal.load(newID)
-  if (signal == null) {
-    signal = new NameSignal(newID)
-  }
-
-  signal.curator = entity.curator
-  //signal.subgraph = entity.subgraph
-  signal.signalledTokens = entity.signalledTokens
-  signal.unsignalledTokens = entity.unsignalledTokens
-  signal.withdrawnTokens = entity.withdrawnTokens
-  signal.nameSignal = entity.nameSignal
-  signal.signal = entity.signal
-  signal.lastNameSignalChange = entity.lastNameSignalChange
-  signal.realizedRewards = entity.realizedRewards
-  signal.averageCostBasis = entity.averageCostBasis
-  signal.averageCostBasisPerSignal = entity.averageCostBasisPerSignal
-  signal.nameSignalAverageCostBasis = entity.nameSignalAverageCostBasis
-  signal.nameSignalAverageCostBasisPerSignal = entity.nameSignalAverageCostBasisPerSignal
-  signal.signalAverageCostBasis = entity.signalAverageCostBasis
-  signal.signalAverageCostBasisPerSignal = entity.signalAverageCostBasisPerSignal
-
-  signal.signalledTokensSentToL2 = entity.signalledTokensSentToL2
-  signal.signalledTokensReceivedOnL2 = entity.signalledTokensReceivedOnL2
-  signal.transferredToL2 = entity.transferredToL2
-
-  signal.entityVersion = newEntityVersion
-  signal.linkedEntity = entity.id
-  // GRAPHSCAN PATCH
-  signal.currentGRTValue = entity.currentGRTValue
-  signal.PLGrt = entity.PLGrt
-  signal.unrealizedPLGrt = entity.unrealizedPLGrt
-  signal.realizedPLGrt = entity.realizedPLGrt
-  signal.lastBuyInPrice = entity.lastBuyInPrice
-  // END GRAPHSCAN PATCH
-  return signal as NameSignal
 }
 
 export function updateL1BlockNumber(graphNetwork: GraphNetwork): GraphNetwork {

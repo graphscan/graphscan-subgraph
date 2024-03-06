@@ -1,76 +1,92 @@
-import { json, Bytes, JSONValueKind, dataSource, log } from '@graphprotocol/graph-ts'
+import { json, Bytes, dataSource, JSONValueKind, log, DataSourceContext } from '@graphprotocol/graph-ts'
 import {
-  AccountMetadata,
-  SubgraphDeploymentMetadata,
-  SubgraphMetadata,
-  SubgraphVersionMetadata,
+  SubgraphMeta,
+  SubgraphVersionMeta,
+  GraphAccountMeta,
+  SubgraphDeploymentSchema,
+  SubgraphDeploymentManifest,
 } from '../types/schema'
+import {
+  SubgraphDeploymentSchema as SubgraphDeploymentSchemaTemplate
+} from '../types/templates'
 import { jsonToString } from './utils'
 
-export function handleSubgraphMetadata(metadata: Bytes): void {
-  let subgraphMetadata = new SubgraphMetadata(dataSource.stringParam())
-  if (metadata !== null) {
-    let tryData = json.try_fromBytes(metadata as Bytes)
-    if (tryData.isOk) {
-      let data = tryData.value.toObject()
-      subgraphMetadata.description = jsonToString(data.get('description'))
-      subgraphMetadata.displayName = jsonToString(data.get('displayName'))
-      subgraphMetadata.codeRepository = jsonToString(data.get('codeRepository'))
-      subgraphMetadata.website = jsonToString(data.get('website'))
+export function handleSubgraphMetadata(content: Bytes): void {
+  let id = dataSource.context().getString("id")
+  let subgraphMetadata = new SubgraphMeta(id)
+  let tryData = json.try_fromBytes(content)
+  if (tryData.isOk) {
+    let data = tryData.value.toObject()
+    subgraphMetadata.description = jsonToString(data.get('description'))
+    subgraphMetadata.displayName = jsonToString(data.get('displayName'))
+    subgraphMetadata.codeRepository = jsonToString(data.get('codeRepository'))
+    subgraphMetadata.website = jsonToString(data.get('website'))
+    let categories = data.get('categories')
 
-      let image = jsonToString(data.get('image'))
-      let subgraphImage = data.get('subgraphImage')
-      if (subgraphImage != null && subgraphImage.kind === JSONValueKind.STRING) {
-        subgraphMetadata.nftImage = image
-        subgraphMetadata.image = jsonToString(subgraphImage)
-      } else {
-        subgraphMetadata.image = image
-      }
-      subgraphMetadata.save()
+    if (categories != null && !categories.isNull()) {
+      let categoriesArray = categories.toArray().map<string>((element) => jsonToString(element))
+      subgraphMetadata.categories = categoriesArray
     }
+    let image = jsonToString(data.get('image'))
+    let subgraphImage = data.get('subgraphImage')
+    if (subgraphImage != null && subgraphImage.kind === JSONValueKind.STRING) {
+      subgraphMetadata.nftImage = image
+      subgraphMetadata.image = jsonToString(subgraphImage)
+    } else {
+      subgraphMetadata.image = image
+    }
+    subgraphMetadata.save()
   }
 }
 
-export function handleAccountMetadata(metadata: Bytes): void {
-  let accountMetadata = new AccountMetadata(dataSource.stringParam())
-  if (metadata !== null) {
-    let tryData = json.try_fromBytes(metadata as Bytes)
-    if (tryData.isOk) {
-      let data = tryData.value.toObject()
-      accountMetadata.codeRepository = jsonToString(data.get('codeRepository'))
-      accountMetadata.description = jsonToString(data.get('description'))
-      accountMetadata.image = jsonToString(data.get('image'))
-      accountMetadata.displayName = jsonToString(data.get('displayName'))
-      let isOrganization = data.get('isOrganization')
-      if (isOrganization != null && isOrganization.kind === JSONValueKind.BOOL) {
-        accountMetadata.isOrganization = isOrganization.toBool()
-      }
-      accountMetadata.website = jsonToString(data.get('website'))
-      accountMetadata.save()
+export function handleSubgraphVersionMetadata(content: Bytes): void {
+  let id = dataSource.context().getString("id")
+  let subgraphVersionMetadata = new SubgraphVersionMeta(id)
+  let tryData = json.try_fromBytes(content)
+  if (tryData.isOk) {
+    let data = tryData.value.toObject()
+    subgraphVersionMetadata.description = jsonToString(data.get('description'))
+    subgraphVersionMetadata.label = jsonToString(data.get('label'))
+  } 
+  subgraphVersionMetadata.save()
+}
+
+export function handleGraphAccountMetadata(content: Bytes): void {
+  let id = dataSource.context().getString("id")
+  let graphAccountMetadata = new GraphAccountMeta(id)
+  let tryData = json.try_fromBytes(content)
+  if (tryData.isOk) {
+    let data = tryData.value.toObject()
+    graphAccountMetadata.codeRepository = jsonToString(data.get('codeRepository'))
+    graphAccountMetadata.description = jsonToString(data.get('description'))
+    graphAccountMetadata.image = jsonToString(data.get('image'))
+    graphAccountMetadata.displayName = jsonToString(data.get('displayName'))
+    let isOrganization = data.get('isOrganization')
+    if (isOrganization != null && isOrganization.kind === JSONValueKind.BOOL) {
+      graphAccountMetadata.isOrganization = isOrganization.toBool()
     }
+    graphAccountMetadata.website = jsonToString(data.get('website'))
+    graphAccountMetadata.save()
   }
 }
 
-export function handleSubgraphVersionMetadata(metadata: Bytes): void {
-  let subgraphVersionMetadata = new SubgraphVersionMetadata(dataSource.stringParam())
-  if (metadata !== null) {
-    let tryData = json.try_fromBytes(metadata as Bytes)
-    if (tryData.isOk) {
-      let data = tryData.value.toObject()
-      subgraphVersionMetadata.description = jsonToString(data.get('description'))
-      subgraphVersionMetadata.label = jsonToString(data.get('label'))
-      subgraphVersionMetadata.save()
-    }
+
+export function handleSubgraphDeploymentSchema(content: Bytes): void {
+  let id = dataSource.context().getString("id")
+  let subgraphDeploymentSchema = new SubgraphDeploymentSchema(id)
+  if (content !== null) {
+    subgraphDeploymentSchema.schema = content.toString()
   }
+  subgraphDeploymentSchema.save()
 }
 
-export function handleSubgraphDeploymentMetadata(metadata: Bytes): void {
-  let ipfsHash = dataSource.stringParam()
-  let subgrapjDeploymentMetadata = new SubgraphDeploymentMetadata(ipfsHash)
-  if (metadata !== null) {
-    subgrapjDeploymentMetadata.manifest = metadata.toString()
+export function handleSubgraphDeploymentManifest(content: Bytes): void {
+  // Shouldn't need ID since the handler isn't gonna be called more than once, given that it's only on deployment creation.
+  let subgraphDeploymentManifest = new SubgraphDeploymentManifest(dataSource.stringParam())
+  if (content !== null) {
+    subgraphDeploymentManifest.manifest = content.toString()
 
-    let manifest = subgrapjDeploymentMetadata.manifest!
+    let manifest = subgraphDeploymentManifest.manifest!
     // we take the right side of the split, since it's the one which will have the schema ipfs hash
     let schemaSplitTry = manifest.split('schema:\n', 2)
     if (schemaSplitTry.length == 2) {
@@ -83,24 +99,21 @@ export function handleSubgraphDeploymentMetadata(metadata: Bytes): void {
         let schemaIpfsHashTry = schemaFileSplit.split('\n', 2)
         if (schemaIpfsHashTry.length == 2) {
           let schemaIpfsHash = schemaIpfsHashTry[0]
-          subgrapjDeploymentMetadata.schemaIpfsHash = schemaIpfsHash
+          let schemaId = subgraphDeploymentManifest.id.concat('-').concat(schemaIpfsHash)
+          subgraphDeploymentManifest.schema = schemaId
+          subgraphDeploymentManifest.schemaIpfsHash = schemaIpfsHash
+
+          let context = new DataSourceContext()
+          context.setString('id', schemaId)
+          SubgraphDeploymentSchemaTemplate.createWithContext(schemaIpfsHash, context)
         } else {
-          log.warning(
-            "[MANIFEST PARSING FAIL] Deployment: {}, schema file hash can't be retrieved. Error: schemaIpfsHashTry.length isn't 2, actual length: {}",
-            [ipfsHash, schemaIpfsHashTry.length.toString()],
-          )
+          log.warning("[MANIFEST PARSING FAIL] subgraphDeploymentManifest: {}, schema file hash can't be retrieved. Error: schemaIpfsHashTry.length isn't 2, actual length: {}", [dataSource.stringParam(), schemaIpfsHashTry.length.toString()])
         }
       } else {
-        log.warning(
-          "[MANIFEST PARSING FAIL] Deployment: {}, schema file hash can't be retrieved. Error: schemaFileSplitTry.length isn't 2, actual length: {}",
-          [ipfsHash, schemaFileSplitTry.length.toString()],
-        )
+        log.warning("[MANIFEST PARSING FAIL] subgraphDeploymentManifest: {}, schema file hash can't be retrieved. Error: schemaFileSplitTry.length isn't 2, actual length: {}", [dataSource.stringParam(), schemaFileSplitTry.length.toString()])
       }
     } else {
-      log.warning(
-        "[MANIFEST PARSING FAIL] Deployment: {}, schema file hash can't be retrieved. Error: schemaSplitTry.length isn't 2, actual length: {}",
-        [ipfsHash, schemaSplitTry.length.toString()],
-      )
+      log.warning("[MANIFEST PARSING FAIL] subgraphDeploymentManifest: {}, schema file hash can't be retrieved. Error: schemaSplitTry.length isn't 2, actual length: {}", [dataSource.stringParam(), schemaSplitTry.length.toString()])
     }
 
     // We get the first occurrence of `network` since subgraphs can only have data sources for the same network
@@ -111,19 +124,15 @@ export function handleSubgraphDeploymentMetadata(metadata: Bytes): void {
       if (networkTry.length == 2) {
         let network = networkTry[0]
 
-        subgrapjDeploymentMetadata.network = network
+        subgraphDeploymentManifest.network = network
       } else {
-        log.warning(
-          "[MANIFEST PARSING FAIL] Deployment: {}, network can't be parsed. Error: networkTry.length isn't 2, actual length: {}",
-          [ipfsHash, networkTry.length.toString()],
-        )
+        log.warning("[MANIFEST PARSING FAIL] subgraphDeploymentManifest: {}, network can't be parsed. Error: networkTry.length isn't 2, actual length: {}", [dataSource.stringParam(), networkTry.length.toString()])
       }
     } else {
-      log.warning(
-        "[MANIFEST PARSING FAIL] Deployment: {}, network can't be parsed. Error: networkSplitTry.length isn't 2, actual length: {}",
-        [ipfsHash, networkSplitTry.length.toString()],
-      )
+      log.warning("[MANIFEST PARSING FAIL] subgraphDeploymentManifest: {}, network can't be parsed. Error: networkSplitTry.length isn't 2, actual length: {}", [dataSource.stringParam(), networkSplitTry.length.toString()])
     }
-    subgrapjDeploymentMetadata.save()
+    let substreamsSplitTry = manifest.split('- kind: substreams', 2)
+    subgraphDeploymentManifest.poweredBySubstreams = substreamsSplitTry.length > 1
   }
+  subgraphDeploymentManifest.save()
 }

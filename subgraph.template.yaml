@@ -1,10 +1,18 @@
-specVersion: 0.0.8
+specVersion: 1.0.0
 description: The Graph Network Smart Contracts on Ethereum for Graphscan.io
 repository: https://github.com/graphscan/graphscan-subgraph
-features:
-  - fullTextSearch
 schema:
   file: ./schema.graphql
+features:
+  - fullTextSearch
+  - ipfsOnEthereumContracts
+indexerHints:
+{{#isL1}}
+  prune: 400
+{{/isL1}}
+{{^isL1}}
+  prune: 15000
+{{/isL1}}
 dataSources:
   - kind: ethereum/contract
     name: Controller
@@ -711,55 +719,63 @@ templates:
           handler: handleApproveTokenDestinations
         - event: RevokeTokenDestinations()
           handler: handleRevokeTokenDestinations
+  - name: SubgraphDeploymentManifest
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mappings/ipfs.ts
+      handler: handleSubgraphDeploymentManifest
+      entities:
+        - SubgraphDeploymentManifest
+      abis:
+        - name: EpochManager
+          file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json
+  - name: SubgraphDeploymentSchema
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mappings/ipfs.ts
+      handler: handleSubgraphDeploymentSchema
+      entities:
+        - SubgraphDeploymentSchema
+      abis:
+        - name: EpochManager
+          file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json
   - name: SubgraphMetadata
     kind: file/ipfs
-    network: {{network}}
     mapping:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       file: ./src/mappings/ipfs.ts
       handler: handleSubgraphMetadata
       entities:
-        - SubgraphMetadata
+        - SubgraphMeta
       abis:
-        - name: SubgraphNFT
-          file: ./node_modules/@graphprotocol/contracts/dist/abis/SubgraphNFT.json
-  - name: AccountMetadata
-    kind: file/ipfs
-    network: {{network}}
-    mapping:
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      file: ./src/mappings/ipfs.ts
-      handler: handleAccountMetadata
-      entities:
-        - AccountMetadata
-      abis:
-        - name: SubgraphNFT
-          file: ./node_modules/@graphprotocol/contracts/dist/abis/SubgraphNFT.json
+        - name: EpochManager
+          file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json
   - name: SubgraphVersionMetadata
     kind: file/ipfs
-    network: {{network}}
     mapping:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       file: ./src/mappings/ipfs.ts
       handler: handleSubgraphVersionMetadata
       entities:
-        - SubgraphVersionMetadata
+        - SubgraphVersionMeta
       abis:
-        - name: SubgraphNFT
-          file: ./node_modules/@graphprotocol/contracts/dist/abis/SubgraphNFT.json
-  - name: SubgraphDeploymentMetadata
+        - name: EpochManager
+          file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json
+  - name: GraphAccountMetadata
     kind: file/ipfs
-    network: {{network}}
     mapping:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       file: ./src/mappings/ipfs.ts
-      handler: handleSubgraphDeploymentMetadata
+      handler: handleGraphAccountMetadata
       entities:
-        - SubgraphDeploymentMetadata
+        - GraphAccountMeta
       abis:
-        - name: SubgraphNFT
-          file: ./node_modules/@graphprotocol/contracts/dist/abis/SubgraphNFT.json
+        - name: EpochManager
+          file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json

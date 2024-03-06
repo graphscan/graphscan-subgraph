@@ -108,6 +108,7 @@ export function handleStakeLocked(event: StakeLocked): void {
   // update indexer
   let id = event.params.indexer.toHexString()
   let indexer = Indexer.load(id)!
+  let oldLockedTokens = indexer.lockedTokens
   indexer.lockedTokens = event.params.tokens
   indexer.tokensLockedUntil = event.params.until.toI32()
   indexer = updateAdvancedIndexerMetrics(indexer as Indexer, event)
@@ -115,9 +116,11 @@ export function handleStakeLocked(event: StakeLocked): void {
   indexer.save()
 
   // update graph network
+  // the tokens from the event replace the previously locked tokens
+  // from this indexer
   graphNetwork.totalUnstakedTokensLocked = graphNetwork.totalUnstakedTokensLocked.plus(
     event.params.tokens,
-  )
+  ).minus(oldLockedTokens)
   if (indexer.stakedTokens == indexer.lockedTokens) {
     graphNetwork.stakedIndexersCount = graphNetwork.stakedIndexersCount - 1
   }
@@ -341,6 +344,8 @@ export function handleAllocationCreated(event: AllocationCreated): void {
 
   // update graph network
   graphNetwork.totalTokensAllocated = graphNetwork.totalTokensAllocated.plus(event.params.tokens)
+  graphNetwork.allocationCount = graphNetwork.allocationCount + 1
+  graphNetwork.activeAllocationCount = graphNetwork.activeAllocationCount + 1
   graphNetwork.save()
 
   // update subgraph deployment
@@ -549,6 +554,7 @@ export function handleAllocationClosed(event: AllocationClosed): void {
   deployment.save()
 
   // update graph network
+  graphNetwork.activeAllocationCount = graphNetwork.activeAllocationCount - 1
   graphNetwork.totalTokensAllocated = graphNetwork.totalTokensAllocated.minus(event.params.tokens)
   graphNetwork.save()
 }
@@ -641,6 +647,7 @@ export function handleAllocationClosedCobbDouglas(event: AllocationClosed1): voi
   deployment.save()
 
   // update graph network
+  graphNetwork.activeAllocationCount = graphNetwork.activeAllocationCount - 1
   graphNetwork.totalTokensAllocated = graphNetwork.totalTokensAllocated.minus(event.params.tokens)
   graphNetwork.save()
 }
@@ -708,6 +715,7 @@ export function handleRebateClaimed(event: RebateClaimed): void {
   graphNetwork.totalUnclaimedQueryFeeRebates = graphNetwork.totalUnclaimedQueryFeeRebates.minus(
     event.params.delegationFees.plus(event.params.tokens),
   )
+  graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(event.params.delegationFees)
   graphNetwork.save()
   queueIndexerForRecalculate(indexerID)
 }
@@ -792,6 +800,7 @@ export function handleRebateCollected(event: RebateCollected): void {
   graphNetwork.totalUnclaimedQueryFeeRebates = graphNetwork.totalUnclaimedQueryFeeRebates.minus(
     event.params.delegationRewards.plus(event.params.queryRebates),
   )
+  graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(event.params.delegationRewards)
   graphNetwork.save()
 }
 
