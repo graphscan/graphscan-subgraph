@@ -6,13 +6,13 @@ schema:
 features:
   - fullTextSearch
   - ipfsOnEthereumContracts
-indexerHints:
-{{#isL1}}
-  prune: 400
-{{/isL1}}
-{{^isL1}}
-  prune: 15000
-{{/isL1}}
+# indexerHints:
+# {{#isL1}}
+#   prune: 400
+# {{/isL1}}
+# {{^isL1}}
+#   prune: 15000
+# {{/isL1}}
 dataSources:
   - kind: ethereum/contract
     name: Controller
@@ -367,16 +367,16 @@ dataSources:
           handler: handleAssetHolderUpdate
         # - event: ImplementationUpdated(address,address)
         #   handler: handleImplementationUpdated
-      blockHandlers:
-        - handler: handleBlock
-          filter:
-            kind: polling
-{{#isL1}}
-            every: 10 # 2 minutes
-{{/isL1}}
-{{^isL1}}
-            every: 500 # around 2 minute
-{{/isL1}}
+#       blockHandlers:
+#         - handler: handleBlock
+#           filter:
+#             kind: polling
+# {{#isL1}}
+#             every: 10 # 2 minutes
+# {{/isL1}}
+# {{^isL1}}
+#             every: 500 # around 2 minute
+# {{/isL1}}
   - kind: ethereum/contract
     name: StakingExtension
     network: {{network}}
@@ -435,31 +435,31 @@ dataSources:
           handler: handleParameterUpdated
         # - event: ImplementationUpdated(address,address)
         #   handler: handleImplementationUpdated
-  - kind: ethereum/contract
-    name: GraphToken
-    network: {{network}}
-    source:
-      address: "{{graphToken}}"
-      abi: GraphToken
-      startBlock: {{blockNumber}}
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      file: ./src/mappings/graphToken.ts
-      entities:
-        - GraphAccount
-        - GraphNetwork
-      abis:
-        - name: GraphToken
-          file: ./node_modules/@graphprotocol/contracts/dist/abis/GraphToken.json
-        - name: EpochManager
-          file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json
-      eventHandlers:
-        - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransfer
-        - event: Approval(indexed address,indexed address,uint256)
-          handler: handleApproval
+  # - kind: ethereum/contract
+  #   name: GraphToken
+  #   network: {{network}}
+  #   source:
+  #     address: "{{graphToken}}"
+  #     abi: GraphToken
+  #     startBlock: {{blockNumber}}
+  #   mapping:
+  #     kind: ethereum/events
+  #     apiVersion: 0.0.7
+  #     language: wasm/assemblyscript
+  #     file: ./src/mappings/graphToken.ts
+  #     entities:
+  #       - GraphAccount
+  #       - GraphNetwork
+  #     abis:
+  #       - name: GraphToken
+  #         file: ./node_modules/@graphprotocol/contracts/dist/abis/GraphToken.json
+  #       - name: EpochManager
+  #         file: ./node_modules/@graphprotocol/contracts/dist/abis/EpochManager.json
+  #     eventHandlers:
+  #       - event: Transfer(indexed address,indexed address,uint256)
+  #         handler: handleTransfer
+  #       - event: Approval(indexed address,indexed address,uint256)
+  #         handler: handleApproval
   - kind: ethereum/contract
     name: EthereumDIDRegistry
     network: {{network}}
