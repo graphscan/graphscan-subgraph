@@ -252,7 +252,7 @@ dataSources:
         - Delegator
         - DelegatedStake
         - Epoch
-        - IndexersRecalculateQueue
+        # - IndexersRecalculateQueue
       abis:
         - name: L1Staking
           file: ./node_modules/@graphprotocol/contracts/dist/abis/L1Staking.json
@@ -322,7 +322,7 @@ dataSources:
         - Delegator
         - DelegatedStake
         - Epoch
-        - IndexersRecalculateQueue
+        # - IndexersRecalculateQueue
       abis:
         - name: Staking
           file: ./abis/IStakingStitched.json
@@ -367,16 +367,16 @@ dataSources:
           handler: handleAssetHolderUpdate
         # - event: ImplementationUpdated(address,address)
         #   handler: handleImplementationUpdated
-      blockHandlers:
-        - handler: handleBlock
-          filter:
-            kind: polling
-{{#isL1}}
-            every: 10 # 2 minutes
-{{/isL1}}
-{{^isL1}}
-            every: 500 # around 2 minute
-{{/isL1}}
+#       blockHandlers:
+#         - handler: handleBlock
+#           filter:
+#             kind: polling
+# {{#isL1}}
+#             every: 10 # 2 minutes
+# {{/isL1}}
+# {{^isL1}}
+#             every: 500 # around 2 minute
+# {{/isL1}}
   - kind: ethereum/contract
     name: StakingExtension
     network: {{network}}
@@ -523,7 +523,7 @@ dataSources:
         - GraphNetwork
         - Epoch
         - SubgraphDeployment
-        - IndexersRecalculateQueue
+       # - IndexersRecalculateQueue
       abis:
         - name: RewardsManagerStitched
           file: ./abis/RewardsManagerStitched.json

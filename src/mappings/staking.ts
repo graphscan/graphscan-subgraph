@@ -28,7 +28,7 @@ import {
   GraphAccount,
   Delegator,
   DelegatedStake,
-  IndexersRecalculateQueue,
+ // IndexersRecalculateQueue,
 } from '../types/schema'
 
 import {
@@ -48,8 +48,8 @@ import {
   createOrLoadIndexerDeployment,
   updateRewardProportionOnDeployment,
   calculateCapacities,
-  updateDelegatorsRewardsFields,
-  queueIndexerForRecalculate,
+  // updateDelegatorsRewardsFields,
+  // queueIndexerForRecalculate,
 } from './helpers/helpers'
 import { addresses } from '../../config/addresses'
 
@@ -245,7 +245,7 @@ export function handleStakeDelegated(event: StakeDelegated): void {
 
   graphNetwork.save()
   delegator.save()
-  queueIndexerForRecalculate(indexer.id)
+  // queueIndexerForRecalculate(indexer.id)
 }
 
 export function handleStakeDelegatedLocked(event: StakeDelegatedLocked): void {
@@ -305,7 +305,7 @@ export function handleStakeDelegatedLocked(event: StakeDelegatedLocked): void {
 
   graphNetwork.save()
   delegator.save()
-  queueIndexerForRecalculate(indexerID)
+  // queueIndexerForRecalculate(indexerID)
 }
 
 export function handleStakeDelegatedWithdrawn(event: StakeDelegatedWithdrawn): void {
@@ -717,7 +717,7 @@ export function handleRebateClaimed(event: RebateClaimed): void {
   )
   graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(event.params.delegationFees)
   graphNetwork.save()
-  queueIndexerForRecalculate(indexerID)
+  // queueIndexerForRecalculate(indexerID)
 }
 
 /**
@@ -937,16 +937,3 @@ export function handleAssetHolderUpdate(event: AssetHolderUpdate): void {
 //   graphNetwork.save()
 // }
 
-// GRAPHSCAN PATCH
-export function handleBlock(block: ethereum.Block): void {
-  let queueEntityDeployment: IndexersRecalculateQueue | null
-  let i = 0
-  let queueId = i.toString()
-  while ((queueEntityDeployment = IndexersRecalculateQueue.load(queueId)) != null) {
-    updateDelegatorsRewardsFields(queueEntityDeployment.indexer)
-    store.remove('IndexersRecalculateQueue', queueId)
-    i++
-    queueId = i.toString()
-  }
-}
-// END GRAPHSCAN PATCH
