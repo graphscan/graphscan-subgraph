@@ -1562,14 +1562,14 @@ type DelegationPoolHistoryEntity @entity(immutable: true) {
   epoch: Int!
 }
 
-"""
-ZONE OF DARK MAGIC DONT USE IT OR U DIE
-"""
-type IndexersRecalculateQueue @entity {
-  "ID is 0 - infinity"
-  id: ID!
-  indexer: ID!
-}
+# """
+# ZONE OF DARK MAGIC DONT USE IT OR U DIE
+# """
+# type IndexersRecalculateQueue @entity {
+#   "ID is 0 - infinity"
+#   id: ID!
+#   indexer: ID!
+# }
 
 """
 Full test search for displayName and description on the Subgraph Entity

@@ -12,7 +12,7 @@ import {
   updateAdvancedIndexerMetrics,
   updateDelegationExchangeRate,
   createOrLoadGraphNetwork,
-  queueIndexerForRecalculate
+  // queueIndexerForRecalculate
 } from './helpers/helpers'
 import { addresses } from '../../config/addresses'
 
@@ -88,7 +88,7 @@ export function handleRewardsAssigned(event: RewardsAssigned): void {
   )
   graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(delegatorIndexingRewards)
   graphNetwork.save()
-  queueIndexerForRecalculate(indexerID)
+  // queueIndexerForRecalculate(indexerID)
 }
 
 /**

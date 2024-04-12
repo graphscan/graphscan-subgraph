@@ -28,7 +28,7 @@ import {
   IndexerDeployment,
   RewardCutHistoryEntity,
   DelegationPoolHistoryEntity,
-  IndexersRecalculateQueue,
+  // IndexersRecalculateQueue,
 } from '../../types/schema'
 import {
   SubgraphDeploymentManifest as SubgraphDeploymentManifestTemplate
@@ -1189,18 +1189,19 @@ export function updateRewardProportionOnDeployment(deployment: SubgraphDeploymen
   }
 }
 
-export function queueIndexerForRecalculate(indexer: string): void {
-  let i = 0
-  let queueId = i.toString()
-  let queueEntityDeployment: IndexersRecalculateQueue | null
-  while ((queueEntityDeployment = IndexersRecalculateQueue.load(queueId)) != null) {
-    if (queueEntityDeployment.indexer == indexer) {
-      return
-    }
-    i++
-    queueId = i.toString()
-  }
-  let queueEntity = new IndexersRecalculateQueue(queueId)
-  queueEntity.indexer = indexer
-  queueEntity.save()
-}
+// depreacaded
+// export function queueIndexerForRecalculate(indexer: string): void {
+//   let i = 0
+//   let queueId = i.toString()
+//   let queueEntityDeployment: IndexersRecalculateQueue | null
+//   while ((queueEntityDeployment = IndexersRecalculateQueue.load(queueId)) != null) {
+//     if (queueEntityDeployment.indexer == indexer) {
+//       return
+//     }
+//     i++
+//     queueId = i.toString()
+//   }
+//   let queueEntity = new IndexersRecalculateQueue(queueId)
+//   queueEntity.indexer = indexer
+//   queueEntity.save()
+// }
